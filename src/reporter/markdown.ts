@@ -1,0 +1,194 @@
+/**
+ * Markdown Reporter - Export Clara analysis results as Markdown
+ */
+
+import type { AnalysisReport, PillarScore, PriorityFix, EndpointReport, Severity } from '../types/index.js';
+
+const SEVERITY_EMOJI: Record<Severity, string> = {
+  critical: '🔴',
+  high: '🟠',
+  medium: '🟡',
+  low: '🔵',
+};
+
+const STATUS_EMOJI = {
+  passed: '✅',
+  failed: '❌',
+  warning: '⚠️',
+  skipped: '⏭️',
+};
+
+export class MarkdownReporter {
+  private includeDetails: boolean;
+
+  constructor(options?: { includeDetails?: boolean }) {
+    this.includeDetails = options?.includeDetails ?? true;
+  }
+
+  /**
+   * Generate full Markdown report
+   */
+  generate(report: AnalysisReport): string {
+    const sections = [
+      this.generateHeader(report),
+      this.generateSummary(report),
+      this.generatePillarScores(report.pillars),
+      this.generatePriorityFixes(report.priorityFixes),
+    ];
+
+    if (this.includeDetails) {
+      sections.push(this.generateEndpointDetails(report.endpoints));
+    }
+
+    sections.push(this.generateFooter(report));
+
+    return sections.join('\n\n');
+  }
+
+  private generateHeader(report: AnalysisReport): string {
+    const readyBadge = report.summary.agentReady
+      ? '![AI Ready](https://img.shields.io/badge/AI%20Agent-Ready-green)'
+      : '![Not AI Ready](https://img.shields.io/badge/AI%20Agent-Not%20Ready-red)';
+
+    return `# Clara Analysis Report
+
+${readyBadge}
+
+| Property | Value |
+|----------|-------|
+| **API** | ${report.api.name} |
+| **Version** | ${report.api.version} |
+| **Source** | \`${report.api.sourcePath}\` |
+| **Generated** | ${new Date(report.generatedAt).toISOString()} |
+| **Clara Version** | ${report.claraVersion} |`;
+  }
+
+  private generateSummary(report: AnalysisReport): string {
+    const { summary } = report;
+    const scoreBar = this.renderScoreBar(summary.overallScore);
+
+    return `## Summary
+
+### Overall Score: ${summary.overallScore}%
+
+\`\`\`
+${scoreBar}
+\`\`\`
+
+| Metric | Value |
+|--------|-------|
+| **Status** | ${summary.agentReady ? '🤖 AI Agent Ready' : '⚠️ Not AI Agent Ready'} |
+| **Total Endpoints** | ${summary.totalEndpoints} |
+| **Passed Checks** | ${summary.passed} |
+| **Failed Checks** | ${summary.failed} |
+| **Warnings** | ${summary.warnings} |
+| **Critical Failures** | ${summary.criticalFailures} |`;
+  }
+
+  private generatePillarScores(pillars: PillarScore[]): string {
+    const sorted = [...pillars].sort((a, b) => b.score - a.score);
+
+    const rows = sorted.map((p) => {
+      const bar = this.renderMiniBar(p.score);
+      return `| ${p.name} | ${bar} ${p.score}% | ${p.checksPassed}/${p.checksPassed + p.checksFailed} |`;
+    });
+
+    return `## Pillar Scores
+
+| Pillar | Score | Checks |
+|--------|-------|--------|
+${rows.join('\n')}`;
+  }
+
+  private generatePriorityFixes(fixes: PriorityFix[]): string {
+    if (fixes.length === 0) {
+      return `## Priority Fixes
+
+✅ **No fixes needed - API is AI-ready!**`;
+    }
+
+    const fixItems = fixes.slice(0, 10).map((fix) => {
+      const emoji = SEVERITY_EMOJI[fix.severity];
+      const fixExample = fix.fix?.example
+        ? `\n   \`\`\`yaml\n   ${fix.fix.example.split('\n').slice(0, 5).join('\n   ')}\n   \`\`\``
+        : '';
+
+      return `### ${fix.rank}. ${emoji} ${fix.checkName}
+
+- **Check ID**: ${fix.checkId}
+- **Severity**: ${fix.severity}
+- **Endpoints Affected**: ${fix.endpointsAffected}
+- **Priority Score**: ${fix.priorityScore}
+
+${fix.summary}
+${fixExample}`;
+    });
+
+    const moreText = fixes.length > 10 ? `\n*... and ${fixes.length - 10} more fixes*` : '';
+
+    return `## Priority Fixes
+
+The following issues should be addressed to improve AI agent compatibility:
+
+${fixItems.join('\n\n---\n\n')}${moreText}`;
+  }
+
+  private generateEndpointDetails(endpoints: EndpointReport[]): string {
+    const endpointSections = endpoints.map((ep) => {
+      const statusEmoji = STATUS_EMOJI[ep.status];
+      const failedChecks = ep.checks.filter((c) => c.status === 'failed');
+      const warnings = ep.checks.filter((c) => c.status === 'warning');
+
+      let checksSection = '';
+
+      if (failedChecks.length > 0) {
+        const failedItems = failedChecks.map(
+          (c) => `- ${SEVERITY_EMOJI[c.severity]} **${c.id}**: ${c.message}`
+        );
+        checksSection += `\n**Failed Checks:**\n${failedItems.join('\n')}`;
+      }
+
+      if (warnings.length > 0) {
+        const warningItems = warnings.map((c) => `- ⚠️ **${c.id}**: ${c.message}`);
+        checksSection += `\n\n**Warnings:**\n${warningItems.join('\n')}`;
+      }
+
+      return `### ${statusEmoji} \`${ep.method}\` ${ep.path}
+
+| Property | Value |
+|----------|-------|
+| **Operation ID** | ${ep.operationId || 'N/A'} |
+| **Score** | ${ep.score}% |
+| **Status** | ${ep.status} |
+${checksSection}`;
+    });
+
+    return `## Endpoint Details
+
+${endpointSections.join('\n\n---\n\n')}`;
+  }
+
+  private generateFooter(report: AnalysisReport): string {
+    return `---
+
+*Generated by Clara v${report.claraVersion} - "Clara, be my eyes"*
+
+For more information, visit: [github.com/postmanlabs/clara](https://github.com/postmanlabs/clara)`;
+  }
+
+  private renderScoreBar(score: number): string {
+    const width = 40;
+    const filled = Math.round((score / 100) * width);
+    const empty = width - filled;
+
+    return `[${'█'.repeat(filled)}${'░'.repeat(empty)}] ${score}%`;
+  }
+
+  private renderMiniBar(score: number): string {
+    const width = 10;
+    const filled = Math.round((score / 100) * width);
+    const empty = width - filled;
+
+    return `${'█'.repeat(filled)}${'░'.repeat(empty)}`;
+  }
+}
