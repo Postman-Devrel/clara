@@ -5,17 +5,71 @@
 import { Command } from 'commander';
 import ora from 'ora';
 import chalk from 'chalk';
-import { resolve, relative } from 'path';
-import { stat } from 'fs/promises';
+import { resolve, relative, basename, dirname, join } from 'path';
+import { stat, mkdir, writeFile } from 'fs/promises';
+import { fileURLToPath } from 'url';
 import { findSpecs, findDocs, type DiscoveredSpec } from '../../discovery/index.js';
 import { analyze } from '../../analyzer/index.js';
-import type { AnalyzeOptions } from '../../types/index.js';
+import { MarkdownReporter } from '../../reporter/index.js';
+import type { AnalyzeOptions, AnalysisReport, PillarScore, PriorityFix, ReportSummary } from '../../types/index.js';
+
+// Get the clara package root directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const CLARA_ROOT = resolve(__dirname, '..', '..', '..');
 
 interface ScanResult {
   spec: DiscoveredSpec;
   score: number;
   agentReady: boolean;
   error?: string;
+  priorityFixes?: PriorityFix[];
+  pillars?: PillarScore[];
+  summary?: ReportSummary;
+  report?: AnalysisReport;
+  reportPath?: string;
+}
+
+
+/**
+ * Generate a timestamp string for report filenames
+ */
+function getTimestamp(): string {
+  const now = new Date();
+  return now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+}
+
+/**
+ * Save a markdown report to the clara reports directory with versioning
+ * Structure: reports/<repo-name>/<spec-name>/<timestamp>.md + latest.md
+ */
+async function saveReport(
+  report: AnalysisReport,
+  repoName: string,
+  specName: string
+): Promise<string> {
+  // Generate safe directory name from spec name
+  const safeName = specName.replace(/\.(yaml|yml|json)$/i, '').replace(/[^a-zA-Z0-9-_]/g, '-');
+  const specDir = join(CLARA_ROOT, 'reports', repoName, safeName);
+
+  // Create the reports directory if it doesn't exist
+  await mkdir(specDir, { recursive: true });
+
+  // Generate timestamp-based filename
+  const timestamp = getTimestamp();
+  const filename = `${timestamp}.md`;
+  const filepath = join(specDir, filename);
+  const latestPath = join(specDir, 'latest.md');
+
+  // Generate markdown report
+  const reporter = new MarkdownReporter({ includeDetails: true });
+  const markdown = reporter.generate(report);
+
+  // Write the timestamped report and latest.md
+  await writeFile(filepath, markdown, 'utf-8');
+  await writeFile(latestPath, markdown, 'utf-8');
+
+  return filepath;
 }
 
 export function createScanCommand(): Command {
@@ -119,10 +173,28 @@ async function runScan(
 
         const report = await analyze(spec.path, analyzeOptions);
 
+        // Save markdown report to clara's reports directory
+        const repoName = basename(resolvedDir);
+        const specName = basename(spec.path);
+        let reportPath: string | undefined;
+
+        if (!options.json) {
+          try {
+            reportPath = await saveReport(report, repoName, specName);
+          } catch {
+            // Silent fail for report saving - don't break the scan
+          }
+        }
+
         results.push({
           spec,
           score: report.summary.overallScore,
           agentReady: report.summary.agentReady,
+          priorityFixes: report.priorityFixes,
+          pillars: report.pillars,
+          summary: report.summary,
+          report,
+          reportPath,
         });
 
         if (!options.quiet && !options.json) {
@@ -134,14 +206,25 @@ async function runScan(
             `${chalk.cyan(relativePath)}: ${scoreColor(report.summary.overallScore + '%')} ${readyIcon}`
           );
 
-          if (options.verbose) {
-            // Show pillar breakdown
-            console.log(chalk.gray('  Pillars:'));
-            for (const pillar of report.pillars) {
-              const pillarColor = pillar.score >= 70 ? chalk.green :
-                                  pillar.score >= 50 ? chalk.yellow :
-                                  chalk.red;
-              console.log(chalk.gray(`    ${pillar.name}: ${pillarColor(pillar.score + '%')}`));
+          // Show concise output - full details are in the report
+          if (!report.summary.agentReady || options.verbose) {
+            // Brief score context
+            const scoreDesc = report.summary.overallScore >= 70 ? 'AI-ready' :
+                             report.summary.overallScore >= 50 ? 'Partially ready' :
+                             'Needs work';
+            console.log(chalk.gray(`   ${scoreDesc} • ${report.summary.criticalFailures} critical issues • ${report.priorityFixes.length} total fixes needed`));
+
+            // Show top fix only
+            if (report.priorityFixes.length > 0) {
+              const topFix = report.priorityFixes[0]!;
+              const severityColor = topFix.severity === 'critical' ? chalk.red : chalk.yellow;
+              console.log(chalk.gray(`   Top fix: `) + severityColor(`${topFix.checkName}`) + chalk.gray(` (${topFix.endpointsAffected} endpoints)`));
+            }
+
+            // Point to the full report
+            if (reportPath) {
+              const relReportPath = relative(process.cwd(), reportPath);
+              console.log(chalk.gray(`   Report: `) + chalk.cyan(relReportPath));
             }
             console.log('');
           }
@@ -218,6 +301,22 @@ async function runScan(
       }
       console.log(`  Agent-ready:     ${readyCount > 0 ? chalk.green(readyCount) : chalk.yellow(readyCount)}/${analyzed.length}`);
       console.log(`  Average score:   ${avgScore >= 70 ? chalk.green(avgScore + '%') : avgScore >= 50 ? chalk.yellow(avgScore + '%') : chalk.red(avgScore + '%')}`);
+
+      // Show reports location
+      const reportsWithPaths = analyzed.filter(r => r.reportPath);
+      if (reportsWithPaths.length > 0) {
+        const repoName = basename(resolvedDir);
+        const reportsDir = relative(process.cwd(), join(CLARA_ROOT, 'reports', repoName));
+        console.log('');
+        console.log(chalk.bold('  📄 Reports saved to:'));
+        console.log(chalk.cyan(`     ${reportsDir}/`));
+        for (const result of reportsWithPaths) {
+          const specName = basename(result.spec.path).replace(/\.(yaml|yml|json)$/i, '');
+          const reportName = basename(result.reportPath!);
+          console.log(chalk.gray(`       └─ ${specName}/`) + chalk.white(`${reportName}`) + chalk.gray(` (+ latest.md)`));
+        }
+        console.log(chalk.gray(`\n     Run again to track progress over time.`));
+      }
 
       if (docs.length > 0) {
         console.log('');

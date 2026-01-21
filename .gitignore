@@ -36,5 +36,8 @@ tmp/
 temp/
 .cache/
 
+# Generated reports (user-specific)
+reports/
+
 CLAUDE.md
 clara-mvp-spec.md
