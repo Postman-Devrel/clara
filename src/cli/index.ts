@@ -10,6 +10,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { createAnalyzeCommand } from './commands/analyze.js';
 import { createDocsCommand } from './commands/docs.js';
+import { createScanCommand } from './commands/scan.js';
 
 const VERSION = '0.1.0';
 
@@ -27,7 +28,10 @@ Analyzes REST APIs to ensure AI agents can:
   • ${chalk.green('Understand')} how to use it correctly
   • ${chalk.green('Self-heal')} from errors without human intervention
 
-Generate AI-ready documentation with ${chalk.cyan('clara docs')}`
+Commands:
+  ${chalk.cyan('clara scan <dir>')}     Scan a repo for all OpenAPI specs
+  ${chalk.cyan('clara analyze <spec>')} Analyze a single spec file
+  ${chalk.cyan('clara docs <spec>')}    Generate AI-ready documentation`
   )
   .version(VERSION, '-V, --version', 'Output the version number')
   .helpOption('-h, --help', 'Display help for command');
@@ -35,6 +39,7 @@ Generate AI-ready documentation with ${chalk.cyan('clara docs')}`
 // Add commands
 program.addCommand(createAnalyzeCommand());
 program.addCommand(createDocsCommand());
+program.addCommand(createScanCommand());
 
 // Default action (when no command is specified)
 program.action(() => {
