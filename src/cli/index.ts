@@ -11,6 +11,7 @@ import chalk from 'chalk';
 import { createAnalyzeCommand } from './commands/analyze.js';
 import { createDocsCommand } from './commands/docs.js';
 import { createScanCommand } from './commands/scan.js';
+import { createSetupCommand } from './commands/setup.js';
 
 const VERSION = '0.1.0';
 
@@ -29,9 +30,10 @@ Analyzes REST APIs to ensure AI agents can:
   • ${chalk.green('Self-heal')} from errors without human intervention
 
 Commands:
-  ${chalk.cyan('clara scan <dir>')}     Scan a repo for all OpenAPI specs
   ${chalk.cyan('clara analyze <spec>')} Analyze a single spec file
-  ${chalk.cyan('clara docs <spec>')}    Generate AI-ready documentation`
+  ${chalk.cyan('clara scan <dir>')}     Scan a repo for all OpenAPI specs
+  ${chalk.cyan('clara docs <spec>')}    Generate AI-ready documentation
+  ${chalk.cyan('clara setup')}          Install /clara slash command for Claude Code`
   )
   .version(VERSION, '-V, --version', 'Output the version number')
   .helpOption('-h, --help', 'Display help for command');
@@ -40,6 +42,7 @@ Commands:
 program.addCommand(createAnalyzeCommand());
 program.addCommand(createDocsCommand());
 program.addCommand(createScanCommand());
+program.addCommand(createSetupCommand());
 
 // Default action (when no command is specified)
 program.action(() => {

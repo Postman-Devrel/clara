@@ -26,12 +26,31 @@ npx @postman/clara analyze ./openapi.json
 
 ## Commands
 
-Clara provides two main commands:
-
 | Command | Description |
 |---------|-------------|
 | `clara analyze` | Analyze an OpenAPI spec for AI-readiness |
+| `clara scan` | Scan a repository for all OpenAPI specs |
 | `clara docs` | Generate AI-ready documentation from an OpenAPI spec |
+| `clara setup` | Install `/clara` slash command for Claude Code |
+
+---
+
+## Claude Code Integration
+
+Install the `/clara` slash command for Claude Code:
+
+```bash
+# Install in current project
+npx @postman/clara setup
+
+# Install globally (all projects)
+npx @postman/clara setup --global
+```
+
+Then in Claude Code, type `/clara` and ask:
+- "Is my API ready for AI agents?"
+- "Analyze ./openapi.yaml for agent-readiness"
+- "What's blocking my API from being agent-ready?"
 
 ---
 
