@@ -6,14 +6,22 @@
  * "Clara, be my eyes" - The Doctor
  */
 
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { createAnalyzeCommand } from './commands/analyze.js';
 import { createDocsCommand } from './commands/docs.js';
 import { createScanCommand } from './commands/scan.js';
 import { createSetupCommand } from './commands/setup.js';
+import { createRemediateCommand } from './commands/remediate.js';
 
-const VERSION = '0.1.0';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const VERSION = JSON.parse(
+  readFileSync(join(__dirname, '../../package.json'), 'utf-8')
+).version;
 
 const program = new Command();
 
@@ -33,7 +41,8 @@ Commands:
   ${chalk.cyan('clara analyze <spec>')} Analyze a single spec file
   ${chalk.cyan('clara scan <dir>')}     Scan a repo for all OpenAPI specs
   ${chalk.cyan('clara docs <spec>')}    Generate AI-ready documentation
-  ${chalk.cyan('clara setup')}          Install /clara slash command for Claude Code`
+  ${chalk.cyan('clara setup')}          Install /clara slash command for Claude Code
+  ${chalk.cyan('clara remediate <spec>')} Generate Agent Mode remediation plan`
   )
   .version(VERSION, '-V, --version', 'Output the version number')
   .helpOption('-h, --help', 'Display help for command');
@@ -43,6 +52,7 @@ program.addCommand(createAnalyzeCommand());
 program.addCommand(createDocsCommand());
 program.addCommand(createScanCommand());
 program.addCommand(createSetupCommand());
+program.addCommand(createRemediateCommand());
 
 // Default action (when no command is specified)
 program.action(() => {

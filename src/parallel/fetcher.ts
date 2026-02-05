@@ -71,7 +71,7 @@ export class DocumentationFetcher {
       const result = this.processSearchResults(response.results, endpoint, searchQueries);
       this.cache.set(cacheKey, result);
       return result;
-    } catch (error) {
+    } catch (_error) {
       // Return not found on error, don't fail the whole analysis
       const notFound: EndpointDocumentation = {
         found: false,

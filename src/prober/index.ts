@@ -272,8 +272,8 @@ export class Prober {
 
     const hasRequestBody = !!endpoint.requestBody;
     const hasRequiredFields =
-      endpoint.requestBody?.content['application/json']?.schema?.required
-        ?.length ?? 0 > 0;
+      (endpoint.requestBody?.content['application/json']?.schema?.required
+        ?.length ?? 0) > 0;
 
     // Always test missing auth if endpoint has security requirements
     if (endpoint.security && endpoint.security.length > 0) {

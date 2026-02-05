@@ -49,12 +49,12 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/postmanlabs/clara.git"
+    "url": "git+https://github.com/Postman-Devrel/clara.git"
   },
   "bugs": {
-    "url": "https://github.com/postmanlabs/clara/issues"
+    "url": "https://github.com/Postman-Devrel/clara/issues"
   },
-  "homepage": "https://github.com/postmanlabs/clara#readme",
+  "homepage": "https://github.com/Postman-Devrel/clara#readme",
   "engines": {
     "node": ">=20.0.0"
   },
