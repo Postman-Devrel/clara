@@ -32,6 +32,7 @@ npx @postman/clara analyze ./openapi.json
 | `clara scan` | Scan a repository for all OpenAPI specs |
 | `clara docs` | Generate AI-ready documentation from an OpenAPI spec |
 | `clara setup` | Install `/clara` slash command for Claude Code |
+| `clara remediate` | Generate a remediation plan with Postman Agent Mode prompts |
 
 ---
 
@@ -255,6 +256,55 @@ A single markdown file containing all documentation sections with a table of con
 
 ---
 
+## Remediate Command
+
+Generate a remediation plan with ready-to-use Postman Agent Mode prompts.
+
+```bash
+clara remediate <spec> [options]
+```
+
+### Basic Usage
+
+```bash
+# Generate remediation plan to terminal
+clara remediate ./openapi.yaml
+
+# Save to a file
+clara remediate ./openapi.yaml -o remediation-plan.md
+
+# Include live probing results
+clara remediate ./openapi.yaml --probe --base-url https://api.example.com
+
+# JSON output for automation
+clara remediate ./openapi.yaml --json -o plan.json
+```
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `-o, --output <file>` | Save plan to file (default: stdout) |
+| `-p, --probe` | Enable live probing (requires `--base-url`) |
+| `-b, --base-url <url>` | Base URL for live probing |
+| `-s, --sandbox` | Mark as sandbox environment |
+| `-a, --auth <header>` | Authorization header |
+| `-d, --docs-url <url>` | Documentation URL for comparison |
+| `--parallel-key <key>` | Parallel AI API key |
+| `--json` | Output raw JSON plan |
+
+### How It Works
+
+1. Clara analyzes your API spec (same as `clara analyze`)
+2. For each issue found, Clara generates a specific Agent Mode prompt
+3. Open Postman, launch Agent Mode, and paste the prompts
+4. Replace `@[Your Collection]` with your actual collection using the @ picker
+5. Agent Mode executes the fixes
+
+The plan organizes issues by severity (Critical > High > Quick Wins) and includes a batch prompt for fixing multiple issues at once.
+
+---
+
 ## What Clara Checks
 
 Clara evaluates your API across **8 pillars** of AI-readiness:
@@ -468,7 +518,7 @@ for (const fix of report.priorityFixes.slice(0, 5)) {
 ### Setup
 
 ```bash
-git clone https://github.com/postmanlabs/clara.git
+git clone https://github.com/Postman-Devrel/clara.git
 cd clara
 npm install
 ```

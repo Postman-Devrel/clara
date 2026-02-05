@@ -28,3 +28,6 @@ export { checks, getCheckById, getChecksByPillar } from './analyzer/checks/index
 
 // Reporter
 export { ConsoleReporter } from './reporter/console.js';
+
+// Remediation
+export { generateRemediationPlan, renderRemediationMarkdown } from './remediate/index.js';
