@@ -143,6 +143,10 @@ jobs:
 
 Exit code `0` = AI-ready. Exit code `1` = not ready. Exit code `2` = error.
 
+## Learn More
+
+[The 90-Day AI Readiness Playbook](https://www.postman.com/ai/90-day-ai-readiness-playbook/) — a step-by-step guide to making your APIs ready for AI agents.
+
 ## License
 
 Apache 2.0
