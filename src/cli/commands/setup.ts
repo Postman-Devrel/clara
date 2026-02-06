@@ -42,33 +42,33 @@ You are invoking Clara to analyze APIs for AI agent readiness. Clara checks 8 pi
 
 Analyze a local OpenAPI spec:
 \`\`\`bash
-npx @postman/clara analyze ./openapi.yaml
+npx @sterlingchin/clara analyze ./openapi.yaml
 \`\`\`
 
 Analyze from URL:
 \`\`\`bash
-npx @postman/clara analyze https://api.example.com/openapi.json
+npx @sterlingchin/clara analyze https://api.example.com/openapi.json
 \`\`\`
 
 Verbose output with endpoint details:
 \`\`\`bash
-npx @postman/clara analyze ./openapi.yaml --verbose
+npx @sterlingchin/clara analyze ./openapi.yaml --verbose
 \`\`\`
 
 Scan entire repo for specs:
 \`\`\`bash
-npx @postman/clara scan .
+npx @sterlingchin/clara scan .
 \`\`\`
 
 Generate AI-ready documentation:
 \`\`\`bash
-npx @postman/clara docs ./openapi.yaml -o ./docs
+npx @sterlingchin/clara docs ./openapi.yaml -o ./docs
 \`\`\`
 
 ## When the user asks about agent-readiness
 
 1. Identify the OpenAPI spec (file path or URL)
-2. Run \`npx @postman/clara analyze <spec>\`
+2. Run \`npx @sterlingchin/clara analyze <spec>\`
 3. Interpret the results:
    - Show the overall score and agent-ready status
    - Highlight critical failures first

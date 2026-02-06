@@ -1,5 +1,5 @@
 {
-  "name": "@postman/clara",
+  "name": "@sterlingchin/clara",
   "version": "0.1.0",
   "description": "AI Agent API Readiness Analyzer - Ensure your APIs are ready for AI agents to discover, understand, and self-heal from errors",
   "type": "module",

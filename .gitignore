@@ -39,5 +39,11 @@ temp/
 # Generated reports (user-specific)
 reports/
 
+# Generated docs
+fleet-docs/
+docs/
+
+# Internal content
+content/
 CLAUDE.md
 clara-mvp-spec.md
